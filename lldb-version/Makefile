@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -O0 -std=gnu89 -Wno-implicit-int
+CFLAGS = -g -m32 -O0 -std=gnu89 -Wno-implicit-int
 
 all: quoziente-resto-due-var-tikz.tex
 

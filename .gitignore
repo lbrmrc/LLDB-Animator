@@ -2,4 +2,5 @@
 *.fdb_latexmk
 *.fls
 *.log
+*.out
 quoziente-resto-due-var

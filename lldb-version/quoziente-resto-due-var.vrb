@@ -1,0 +1,7 @@
+\frametitle{Quoziente e resto, due variabili}
+\hspace*{-1.1cm}
+    \begin{tikzpicture}
+        \input{quoziente-resto-due-var-tikz.tex}
+    \end{tikzpicture}
+\end{frame}}
+\end{document}

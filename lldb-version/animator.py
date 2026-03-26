@@ -140,11 +140,9 @@ def arrayChars(frame, expr, length, xPos, yPos, width, height):
         child_expr = "({0})[{1}]".format(expr, i)
         v1 = frame.EvaluateExpression(child_expr)
         raw = v1.GetSummary() or v1.GetValue() or ""
-        # Clean up the display value
+        
         content = raw.replace("\\000", "\\0").replace(
             "\\", "\\textbackslash{}")
-        if content.startswith("'") and content.endswith("'"):
-            content = content[1:-1]
         elements.append(Element(type="node",
                                 data=NodeData(id=None,
                                               content=formatChar(content),
@@ -473,7 +471,7 @@ class SourceRenderer(Renderer):
               "commentstyle=\\color{purple}\\ttfamily"]
 
     SOURCE_LINE_WIDTH = 0.3348
-    SOURCE_OFFSET = 0.2
+    SOURCE_OFFSET = 0.35
 
     def __init__(self, sourceFile=None):
         self.sourceFile = sourceFile
@@ -495,7 +493,7 @@ class SourceRenderer(Renderer):
                      * self.SOURCE_LINE_WIDTH, 3)
         return [Element(type="node",
                         data=NodeData(id=None,
-                                      content="\\lstinputlisting[{1}]{{{0}}}".format(
+                                      content="\\begin{{minipage}}{{8.0cm}}\\lstinputlisting[{1}]{{{0}}}\\end{{minipage}}".format(
                                           filename, ",".join(self.LstSet)),
                                       position=Point(x=0.35, y=0),
                                       options=["below right"])),

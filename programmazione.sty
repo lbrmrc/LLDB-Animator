@@ -1,0 +1,352 @@
+\ProvidesPackage{../programmazione}
+\RequirePackage{ifthen}
+\newboolean{animations}
+\DeclareOption{animations}{\setboolean{animations}{true}}
+\newboolean{teacher}
+\DeclareOption{teacher}{\setboolean{teacher}{true}}
+\ProcessOptions
+\usepackage[italian]{babel}
+\usepackage{xspace}
+\usepackage{amsfonts}
+\usepackage{filemod}
+\usepackage{babel}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[nounderscore]{syntax}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{eurosym}
+\usepackage{pbox}
+\usepackage{textcomp}
+\usepackage{xstring}
+\usepackage[utf8]{inputenc}
+%\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage{upquote}
+\usepackage{todonotes}
+\usepackage{mathabx}
+\useinnertheme{rounded}
+\usecolortheme{orchid}
+\usepackage[export]{adjustbox}
+\usepackage{pdfpages}
+\usepackage{mathtools}
+\usepackage{xstring}
+\usepackage{hyperref}
+
+%\usetheme[sectionpage=progressbar,subsectionpage=progressbar]{metropolis}           % Use metropolis theme
+
+\newcommand{\ti}[1]{\todo[inline]{#1}}
+
+\deftranslation[to=Italian]{Example}{Esempio}
+\deftranslation[to=Italian]{Section}{Sezione}
+
+
+
+\mode<presentation>{
+\beamertemplatenavigationsymbolsempty
+}
+
+\setbeamerfont{note page}{size=\tiny}
+\setbeamerfont{page number in head/foot}{size=\small}
+\setbeamertemplate{footline}[frame number]
+% \setbeamertemplate{footline}{%
+%   \hfill%
+%         \usebeamercolor[fg]{page number in head/foot}%
+%         \usebeamerfont{page number in head/foot}%
+%         \insertframenumber\kern1em%
+%  }
+
+%  \setbeamertemplate{frametitle}
+% {%
+%     \nointerlineskip
+%     \begin{beamercolorbox}[sep=0.2cm,wd=\paperwidth]{frametitle}
+%         \usebeamerfont{frametitle}%
+%         \vbox{}\vskip-1ex%
+%         \strut\insertframetitle\strut%
+%         \hfill
+%         {\includegraphics[height=0.8cm]{../LogoUnife.pdf}}
+%     \end{beamercolorbox}
+% }
+
+\usepackage{pgf}
+\logo{\pgfputat{\pgfxy(0,7.4)}{\pgfbox[right,base]{\includegraphics[height=0.8cm]{../LogoUnife.pdf}}}}
+\newcommand{\nologo}{\setbeamertemplate{logo}{}}
+
+\lstset{
+  language=C,
+  basicstyle=\ttfamily\footnotesize,
+  numberstyle=\footnotesize,
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=false,
+  showstringspaces=false,
+  commentstyle=\color{purple}\ttfamily,
+}
+
+
+\date{Programmazione e Laboratorio, A.A. 2023-2024\\
+\vspace{0.5cm}
+\tiny{Ultima modifica: \Filemodtoday{\outname}\\
+Attenzione! Questo materiale didattico è per uso personale dello studente ed è coperto da copyright.\\Ne sono vietati la riproduzione e il riutilizzo anche parziale, ai sensi e per gli effetti della legge sul diritto d'autore.
+}}
+\author{Marco Alberti}
+%\institute{Dipartimento di Matematica e Informatica\\
+ \institute{\includegraphics[valign=c, height=0.7cm]{../Sigillo_Mate_Info}\\
+\includegraphics[valign=c, height=0.7cm]{../LogoUnife}}
+
+\AtBeginSection[]
+{
+  \begin{frame}[noframenumbering,plain]{Sommario}
+      \tableofcontents[currentsection]
+  \end{frame}
+}
+
+%{\frame{\sectionpage}}
+%\AtBeginSubsection{\frame{\subsectionpage}}
+
+\AtBeginSubsection[]
+{
+    \begin{frame}[noframenumbering,plain]{Sommario}
+        \tableofcontents[currentsection,currentsubsection]
+    \end{frame}
+}
+
+\newcommand{\code}[1]{\textcolor{red!50!yellow}{\texttt{#1}}}
+%\newcommand{\notion}[1]{{\color{red!80!blue} {#1}}}
+\newcommand{\notion}[1]{\textcolor{red!80!blue} {#1}}
+\newcommand{\plhold}[1]{\code{\_\_{#1}\_\_}}
+\newcommand{\verticale}[1]{\rotatebox[origin=c]{90}{{#1}}}
+\newcommand{\til}{\textcolor{red!50!yellow} {$\sim$}}
+\newcommand{\urlesempi}{https://github.com/lbrmrc/Programmazione2023/tree/main/codice/}
+\newcommand{\diresempi}{../Programmazione2023/codice/}
+
+
+\newenvironment<>{codeblock}[1]{%
+\setbeamercolor{block title}{fg=white,bg=orange!75!black}%
+\begin{block}#2{#1}}{\end{block}}
+
+\newcommand{\codelink}[1]{\texttt{
+  \href{\noexpand \urlesempi \outname/#1}{\outname/#1}}}
+
+\newcommand{\codeexample}[2][numbers=left,language=C,breaklines=true]{
+    \begin{codeblock}{\codelink{#2}}
+     \lstinputlisting[#1]{"\diresempi \outname/#2"}
+    \end{codeblock}}
+
+\newcommand{\adjustcodeexample}[3][numbers=left,language=C]{
+  \begin{codeblock}{\codelink{#2}}
+    \begin{adjustbox}{width=11.0cm,height={#3},keepaspectratio}
+      \lstinputlisting[#1]{"\diresempi \outname/#2"}
+    \end{adjustbox}
+  \end{codeblock}}
+%\diresempi \outname/{#1}}
+
+\newenvironment{exercisedir}[1]
+{\StrSubstitute{#1}{ }{_}[\name]
+  \edef\tmp{\lowercase{\noexpand\href{\urlesempi \outname/\name/}}}
+\begin{block}{\tmp{#1}}}
+{\end{block}}
+
+\newenvironment{exercise}[1]
+{\StrSubstitute{#1}{ }{-}[\name]
+  \edef\tmp{\lowercase{\noexpand\href{\urlesempi \outname/\name.c}}}
+\begin{block}{\tmp{#1}}}
+{\end{block}}
+
+
+
+
+
+\newcommand{\codefromfile}[3]{\lstinputlisting[firstline={#2},lastline={#3},language=C,]{#1}}
+
+\newcommand{\sourceframe}[2]
+{\begin{frame}{#1}
+    \lstinputlisting[escapeinside={/*}{*/}]{#2}
+\end{frame}}
+
+\newcommand{\nsourceframe}[2]
+{\begin{frame}{#1}
+    \codeexample{#2}
+\end{frame}}
+
+\newcommand{\codeframe}[4]
+{\begin{frame}{#1}
+    \codefromfile{#2}{#3}{#4}
+\end{frame}}
+
+\ifthenelse{\boolean{animations}}
+{\newcommand{\animationframetitle}[1]
+  {\begin{frame}{\codelink{#1.c}}
+      \hspace*{-1.1cm}
+  \begin{tikzpicture}
+ %   \draw[step=0.1,black,very thin] (0,0) grid (12,-8);
+ %   \draw[step=1.0,black,thick] (0,0) grid (12,-8);
+    \input{#1.tex}
+  \end{tikzpicture}
+    \end{frame}
+}}
+{\newcommand{\animationframetitle}[1]{\begin{frame}{Animazione \codelink{#1.c}}
+  \codeexample{#1.c}
+\end{frame}}}
+
+\ifthenelse{\boolean{animations}}
+{\newcommand{\animationframe}[2]
+  {\begin{frame}{#1}
+      \hspace*{-1.1cm}
+  \begin{tikzpicture}
+ %   \draw[step=0.1,black,very thin] (0,0) grid (12,-8);
+ %   \draw[step=1.0,black,thick] (0,0) grid (12,-8);
+    \input{#2}
+  \end{tikzpicture}
+    \end{frame}
+}}
+{\newcommand{\animationframe}[2]{\begin{frame}{Animazione #1}
+\end{frame}}}
+
+
+\newcommand{\lista}[1]{[{#1}]}
+
+\newcommand{\teacher}[2]{\tikz\node[minimum height={#1},text
+  width=\textwidth]{\ifthenelse{\boolean{teacher}}{\scriptsize{\textcolor{teal}{#2}}}{}};}
+
+
+
+
+
+\renewcommand{\litleft}{\bfseries\ttfamily}
+\renewcommand{\litright}{}
+
+\newcommand{\optOpener}{\ensuremath{\ldbrack}}
+\newcommand{\optCloser}{\ensuremath{\rdbrack}}
+
+\newcommand{\openZom}{\optOpener\xspace}
+\newcommand{\closeZom}{\optCloser\ensuremath{^{*}}\xspace}
+
+\newcommand{\openOom}{\optOpener\xspace}
+\newcommand{\closeOom}{\optCloser\ensuremath{^{+}}\xspace}
+
+\newcommand{\openAlt}{\optOpener\xspace}
+\newcommand{\closeAlt}{\optCloser\xspace}
+\newcommand{\inAlt}{|}
+
+\setbeamerfont*{itemize/enumerate subbody}{parent=itemize/enumerate body}
+\setbeamerfont*{itemize/enumerate subsubbody}{parent=itemize/enumerate
+  body}
+
+\newcommand{\mylabel}[2]{\label{#1}\hypertarget{#1}{#2}}
+\newcommand{\myref}[1]{\hyperlink{#1}{$^{\rightarrow\pageref{#1}}$}}
+
+\newcommand{\mi}[1]{\ensuremath{\mathit{#1}}}
+
+\newcommand{\animation}[1]{\begin{frame}
+  \frametitle{Esecuzione}
+  \hspace*{-1.1cm}
+  \begin{tikzpicture}
+ %   \draw[step=0.1,black,very thin] (0,0) grid (12,-8);
+ %   \draw[step=1.0,black,thick] (0,0) grid (12,-8);
+    \input{#1}
+  \end{tikzpicture}
+\end{frame}}
+
+\tikzstyle{changed}=[red]
+
+\newcommand{\vale}[2]{\code{#1} $\rightarrow$ \code{#2}}
+
+\usetikzlibrary{shapes.geometric, arrows, calc, matrix}
+
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum
+width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30]
+
+\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right
+angle=110, minimum width=3cm, text width=3cm, minimum height=1cm, text centered,
+draw=black, fill=blue!30]
+
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum
+height=1cm, text centered, draw=black, fill=orange!30]
+
+\tikzstyle{decision} = [diamond, minimum width=3cm, text width=1cm, minimum
+height=1cm, text centered,  draw=black, fill=green!30]
+
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+\tikzset{
+  notice/.style  = {draw, rectangle callout, callout absolute
+    pointer={#1},text width=4.0cm, align=center },
+}
+
+\newcommand{\codenode}[2]{\node[right] at (#1) {\code{#2}}}
+
+\usetikzlibrary{fit}
+
+\usetikzlibrary{shapes,arrows}
+
+\usetikzlibrary{tikzmark}
+\usetikzlibrary{positioning}
+
+\newcommand{\codelabel}[2]{\draw[red,dashed,rounded corners]
+  ([shift={(-3pt,3ex)}]pic cs:{#1S})
+    rectangle
+    ([shift={(3pt,0pt)}]pic cs:{#1E}) node [above=0.2cm,midway]
+    {{#2}};}
+
+% \newcommand{\synblock}[1]{\begin{block}{Sintassi}
+%       \begin{grammar}
+%       #1
+%       \end{grammar}
+% \end{block}}
+
+\newenvironment{synblock}[0]{\begin{block}{Sintassi}
+  \begin{grammar}}{\end{grammar}
+  \end{block}}
+
+\newcommand{\semblock}[2]{\begin{block}{Semantica}
+      \begin{itemize}
+      \item Effetto: {#2}
+      \item Valore: {#1}
+      \end{itemize}
+    \end{block}}
+
+\newcommand{\fullscreenimage}[1]{
+  \bgroup
+  \usebackgroundtemplate{\parbox[c][\paperheight][c]{\paperwidth}{\centering\includegraphics[width=\paperwidth]{#1}}}
+      \begin{frame}[plain]
+      \end{frame}
+      \egroup
+      }
+
+\newcommand{\insertpdf}[1]{{
+  \setbeamercolor{background canvas}{bg=}
+  \includepdf[pages={1-}]{#1}
+  }}
+
+
+  \newcommand{\nota}[1]{
+    \mode<article>{
+      {\itshape {#1}}
+    }
+  }
+
+  \mode<article>{
+   \renewcommand{\frametitle}[1]{\subsubsection*{#1 [Slide \insertframenumber]}}
+   \def\insertsection{}
+}
+
+\define@key{beamerframe}{t}[true]{% top
+  \beamer@frametopskip=.2cm plus .5\paperheight\relax%
+  \beamer@framebottomskip=0pt plus 1fill\relax%
+  \beamer@frametopskipautobreak=\beamer@frametopskip\relax%
+  \beamer@framebottomskipautobreak=\beamer@framebottomskip\relax%
+  \def\beamer@initfirstlineunskip{}%
+}
+
+\newcommand{\titleslide}{
+  \mode<presentation>{{\nologo
+\begin{frame}[noframenumbering,plain]
+	\titlepage
+\end{frame}}}
+}
+
+\newcommand{\tocslide}{
+  \begin{frame}[noframenumbering,plain]{Sommario}
+    \tableofcontents
+  \end{frame}
+}
