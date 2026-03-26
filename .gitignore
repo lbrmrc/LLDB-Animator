@@ -4,3 +4,4 @@
 *.log
 *.out
 quoziente-resto-due-var
+lldb-version/__pycache__/animator.cpython-312.pyc
