@@ -4,7 +4,6 @@
 *.log
 *.out
 quoziente-resto-due-var
-lldb-version/__pycache__/animator.cpython-312.pyc
 *.egg-info/
 __pycache__/
 *.nav
@@ -13,3 +12,6 @@ __pycache__/
 *.vrb
 *.synctex.gz
 examples/*/*.pdf
+.pytest_cache/
+.mypy_cache/
+stdout.txt

@@ -165,7 +165,8 @@ il documento da quella cartella (o scrivi l'output accanto al `.tex` principale)
 
 Esempi completi:
 
-- [lldb-version/](lldb-version/): codice, stack, stdin e stdout.
+- [examples/quoziente-resto-due-var/](examples/quoziente-resto-due-var/): codice,
+  stack, stdin e stdout.
 - [examples/lista/](examples/lista/): lista concatenata e array sull'heap, più una
   chiamata di funzione con due frame sullo stack.
 
