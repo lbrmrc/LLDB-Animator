@@ -8,31 +8,88 @@ This is a standalone Python script that uses the LLDB Python bindings
 as a library (no need to run inside a debugger).
 """
 
-from collections import namedtuple
-import itertools
-import lldb
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Literal
+# import itertools
+import lldb 
 import copy
 import os
 
-Symbol = namedtuple("Symbol", "ordinal address name type value")
-Block = namedtuple("Block", "ordinal symbols")
-Frame = namedtuple("Frame", "ordinal blocks")
-Snapshot = namedtuple("Snapshot", "ordinal frames")
 
-Point = namedtuple("Point", "x y")
-NodeData = namedtuple("NodeData", "id content position options")
-LineData = namedtuple("LineData", "points options outin")
-Element = namedtuple("Element", "type data")
-NumberedElement = namedtuple("NumberedElement", "number element")
-NumberListedElement = namedtuple("NumberListedElement", "numbers element")
+@dataclass
+class Symbol:
+    ordinal: int
+    address: str
+    name: str
+    type: str
+    value: Any
 
 
-def decVal(val):
+@dataclass
+class Block:
+    ordinal: int
+    symbols: list[Symbol]
+
+
+@dataclass
+class Frame:
+    ordinal: int
+    blocks: list[Block]
+
+
+@dataclass
+class Snapshot:
+    ordinal: int
+    frames: list[Frame]
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+
+@dataclass
+class NodeData:
+    id: str | None
+    content: str
+    position: Point | str | None
+    options: list[str] = field(default_factory=list)
+
+
+@dataclass
+class LineData:
+    points: list[Point | str]
+    options: list[str] = field(default_factory=list)
+    outin: tuple[int, int] | None = None
+
+
+@dataclass
+class Element:
+    type: Literal["node", "line"]
+    data: NodeData | LineData
+
+
+@dataclass
+class NumberedElement:
+    number: int
+    element: Element
+
+
+@dataclass
+class NumberListedElement:
+    numbers: list[int]
+    element: Element
+
+
+def decVal(val: lldb.SBValue) -> str:
     """Convert an SBValue (typically a pointer) to its decimal string."""
     return str(val.GetValueAsUnsigned())
 
 
-def decValAddress(val):
+def decValAddress(val: lldb.SBValue) -> str:
     """Get the address of an SBValue as a decimal string."""
     addr = val.AddressOf()
     if addr.IsValid():
@@ -41,21 +98,21 @@ def decValAddress(val):
     return str(val.GetAddress().GetLoadAddress(val.GetTarget()))
 
 
-def markChanged(numberedElements):
-    emphasized = []
-    for number, element in numberedElements:
-        elementCopy = Element(**(copy.deepcopy(element._asdict())))
-        if number != 1 and not ((number - 1, element) in numberedElements):
+def markChanged(numberedElements: list[NumberedElement]) -> list[NumberedElement]:
+    emphasized: list[NumberedElement] = []
+    for ne in numberedElements:
+        elementCopy = copy.deepcopy(ne.element)
+        if ne.number != 1 and not NumberedElement(ne.number - 1, ne.element) in numberedElements:
             try:
                 elementCopy.data.options.append("changed")
             except Exception as e:
                 print(e)
-        emphasized.append(NumberedElement(number, elementCopy))
+        emphasized.append(NumberedElement(ne.number, elementCopy))
     return emphasized
 
 
-def groupByElement(numberedElements):
-    grouped = []
+def groupByElement(numberedElements: list[NumberedElement]) -> list[NumberListedElement]:
+    grouped: list[NumberListedElement] = []
     for ne in numberedElements:
         found = False
         for gr in grouped:
@@ -69,51 +126,51 @@ def groupByElement(numberedElements):
     return grouped
 
 
-def file_len(fname):
+def file_len(fname: str) -> int:
     with open(fname) as f:
         for i, l in enumerate(f):
             pass
     return i + 1
 
 
-def formatCode(s):
+def formatCode(s: str) -> str:
     return "\\texttt{{{0}}}".format(s.split(' ')[0])
 
 
-def nullPointer():
+def nullPointer() -> str:
     return formatCode("0")
 
 
-def formatAddress(s):
+def formatAddress(s: str) -> str:
     return "\\texttt{{\\tiny{{{0}}}}}".format(s)
 
 
-def formatChar(s):
+def formatChar(s: str) -> str:
     return "\\texttt{{\\tiny{{{0}}}}}".format(s)
 
 
-def renderNodeId(id):
+def renderNodeId(id: str | None) -> str:
     if id is None:
         return ""
     else:
         return "({0})".format(str(id))
 
 
-def renderPoint(p):
+def renderPoint(p: Point | str) -> str:
     try:
         return "({0},{1})".format(p.x, p.y)
     except AttributeError:
         return "({0})".format(p)
 
 
-def renderNodePosition(pos):
+def renderNodePosition(pos: Point | str | None) -> str:
     if pos is None:
         return ""
     else:
         return "at {0}".format(renderPoint(pos))
 
 
-def renderElement(element):
+def renderElement(element: Element) -> str:
     d = element.data
     if element.type == "node":
         return "\\node [{0}] {1} {2} {{{3}}}".format(",".join(d.options),
@@ -132,7 +189,7 @@ def renderElement(element):
         return "\\draw [{0}] {1}".format(",".join(d.options), (" {0} ".format("--" if d.outin is None else outin).join(renderPoint(p) for p in d.points)))
 
 
-def arrayChars(frame, expr, length, xPos, yPos, width, height):
+def arrayChars(frame: lldb.SBFrame, expr: str, length: int, xPos: float, yPos: float, width: float, height: float) -> list[Element]:
     """Render an array of chars from an expression evaluated in the given frame."""
     elements = []
     base_val = frame.EvaluateExpression(expr)
@@ -159,27 +216,27 @@ def arrayChars(frame, expr, length, xPos, yPos, width, height):
 
 class Renderer():
 
-    def elements(self, thread):
+    def elements(self, thread: lldb.SBThread) -> list[Element]:
         return []
 
 
 class MemoryRenderer(Renderer):
 
-    def __init__(self, xPos, yPos, cell_height, rotate=True, heap=None, heapTopLeft=Point(0.0, 0.0), heapPositions=[], hideAddresses=False, sourceFile=None):
-        self.CELL_HEIGHT = cell_height
-        self.xPos = xPos
-        self.yPos = yPos
-        self.CELL_WIDTH = 1.5
-        self.FUNCTION_NAMES = True
-        self.rotate = rotate
-        self.heap = heap
-        self.heapTopLeft = heapTopLeft
-        self.heapPositions = heapPositions
-        self.heapCoordinates = {}
-        self.hideAddresses = hideAddresses
-        self.sourceFile = sourceFile
+    def __init__(self, xPos: float, yPos: float, cell_height: float, rotate: bool = True, heap: Heap | None = None, heapTopLeft: Point = Point(0.0, 0.0), heapPositions: list[Point] | None = None, hideAddresses: bool = False, sourceFile: str | None = None) -> None:
+        self.CELL_HEIGHT: float = cell_height
+        self.xPos: float = xPos
+        self.yPos: float = yPos
+        self.CELL_WIDTH: float = 1.5
+        self.FUNCTION_NAMES: bool = True
+        self.rotate: bool = rotate
+        self.heap: Heap | None = heap
+        self.heapTopLeft: Point = heapTopLeft
+        self.heapPositions: list[Point] = heapPositions if heapPositions is not None else []
+        self.heapCoordinates: dict[str, Point] = {}
+        self.hideAddresses: bool = hideAddresses
+        self.sourceFile: str | None = sourceFile
 
-    def getHeapCoordinates(self, address):
+    def getHeapCoordinates(self, address: str) -> Point:
         if address in self.heapCoordinates:
             return self.heapCoordinates[address]
         else:
@@ -189,7 +246,7 @@ class MemoryRenderer(Renderer):
             self.heapCoordinates[address] = coords
             return coords
 
-    def _getBlockVariables(self, block, frame):
+    def _getBlockVariables(self, block: lldb.SBBlock | None, frame: lldb.SBFrame) -> list[lldb.SBValue]:
         """Get variables declared in a specific block (not its parents)."""
         variables = []
         # Get all variables in the frame
@@ -208,7 +265,7 @@ class MemoryRenderer(Renderer):
                     variables.append(var)
         return variables
 
-    def frameElementsOffset(self, frame, offset):
+    def frameElementsOffset(self, frame: lldb.SBFrame, offset: float) -> tuple[list[Element], float]:
         """Process a frame and generate TikZ elements for all its variables."""
         # Collect all variables: arguments first, then locals
         all_vars = []
@@ -251,7 +308,7 @@ class MemoryRenderer(Renderer):
                                                   options=["above", "rotate=-90"] if self.rotate else ["right"])))
         return elements, newOffset
 
-    def arrayElementsOffset(self, var, frame, offset):
+    def arrayElementsOffset(self, var: lldb.SBValue, frame: lldb.SBFrame, offset: float) -> tuple[list[Element], float]:
         """Handle array-type variables."""
         elements = []
         symbolOffset = offset
@@ -271,7 +328,7 @@ class MemoryRenderer(Renderer):
 
         return elements, symbolOffset
 
-    def symbolElements(self, address, name, val, offset):
+    def symbolElements(self, address: str, name: str, val: lldb.SBValue, offset: float) -> list[Element]:
         """Generate TikZ elements for a single variable cell."""
         content = formatCode(val.GetValue() or str(val.GetValueAsUnsigned()))
         type_class = val.GetType().GetCanonicalType().GetTypeClass()
@@ -318,7 +375,7 @@ class MemoryRenderer(Renderer):
 
         return elements
 
-    def symbolElementsOffset(self, var, frame, offset):
+    def symbolElementsOffset(self, var: lldb.SBValue, frame: lldb.SBFrame, offset: float) -> tuple[list[Element], float]:
         """Handle a scalar or pointer variable."""
         addr_val = var.AddressOf()
         if not addr_val.IsValid() or addr_val.GetValueAsUnsigned() == 0:
@@ -333,10 +390,10 @@ class MemoryRenderer(Renderer):
         elements = self.symbolElements(address, name, var, offset)
         return elements, offset - self.CELL_HEIGHT
 
-    def findElementPosition(self, elements, start):
+    def findElementPosition(self, elements: list[Element], start: str) -> Point | str | None:
         return next(filter((lambda element: element.type == 'node' and element.data.id == start), elements)).data.position
 
-    def getOutIn(self, elements, start, end):
+    def getOutIn(self, elements: list[Element], start: str, end: str) -> tuple[int, int]:
         sPos = self.findElementPosition(elements, start)
         ePos = self.findElementPosition(elements, end)
         dx, dy = ePos.x - sPos.x, ePos.y - sPos.y
@@ -368,11 +425,11 @@ class MemoryRenderer(Renderer):
             in_ = 90
         return out, in_
 
-    def elements(self, thread):
+    def elements(self, thread: lldb.SBThread) -> list[Element]:
         """Collect all memory elements from the current thread state."""
         frame = thread.GetSelectedFrame()
         # Walk up the frame stack, only including frames from the user's source file
-        frames = []
+        frames: list[lldb.SBFrame] = []
         for i in range(thread.GetNumFrames()):
             f = thread.GetFrameAtIndex(i)
             if not f.GetLineEntry().IsValid() or not f.GetFunction().IsValid():
@@ -383,9 +440,9 @@ class MemoryRenderer(Renderer):
                 continue
             frames.append(f)
 
-        elements = []
-        self.pointers = []
-        self.addresses = []
+        elements: list[Element] = []
+        self.pointers: list[tuple[str, str]] = []
+        self.addresses: list[str] = []
         offset = self.yPos
         frames.reverse()
         for frame in frames:
@@ -473,10 +530,10 @@ class SourceRenderer(Renderer):
     SOURCE_LINE_WIDTH = 0.3348
     SOURCE_OFFSET = 0.35
 
-    def __init__(self, sourceFile=None):
-        self.sourceFile = sourceFile
+    def __init__(self, sourceFile: str | None = None) -> None:
+        self.sourceFile: str | None = sourceFile
 
-    def elements(self, thread):
+    def elements(self, thread: lldb.SBThread) -> list[Element]:
         frame = thread.GetSelectedFrame()
         line_entry = frame.GetLineEntry()
         if not line_entry.IsValid():
@@ -509,17 +566,17 @@ class SourceRenderer(Renderer):
 
 class IORenderer(Renderer):
 
-    def __init__(self, width, height, xPos, yPos, readPointer, writePointer, length, name):
-        self.width = width
-        self.height = height
-        self.xPos = xPos
-        self.yPos = yPos
-        self.name = name
-        self.length = length
-        self.readPointer = readPointer
-        self.writePointer = writePointer
+    def __init__(self, width: float, height: float, xPos: float, yPos: float, readPointer: bool, writePointer: bool, length: int, name: str) -> None:
+        self.width: float = width
+        self.height: float = height
+        self.xPos: float = xPos
+        self.yPos: float = yPos
+        self.name: str = name
+        self.length: int = length
+        self.readPointer: bool = readPointer
+        self.writePointer: bool = writePointer
 
-    def streamName(self):
+    def streamName(self) -> str:
         return {
             "_IO_stdin": "stdin",
             "stdin": "stdin",
@@ -527,7 +584,7 @@ class IORenderer(Renderer):
             "stdout": "stdout"
         }[self.name]
 
-    def elements(self, thread):
+    def elements(self, thread: lldb.SBThread) -> list[Element]:
         frame = thread.GetSelectedFrame()
         # Check if the stream buffer is initialized
         check = frame.EvaluateExpression("{0}->_IO_read_base".format(self.name))
@@ -573,7 +630,7 @@ class IORenderer(Renderer):
         return elements
 
 
-def list2intervalList(l):
+def list2intervalList(l: list[int]) -> list[tuple[int, int]]:
     intervals = []
     if len(l) > 0:
         l1 = sorted(l)
@@ -586,7 +643,7 @@ def list2intervalList(l):
     return intervals
 
 
-def renderIntervals(intervals):
+def renderIntervals(intervals: list[tuple[int, int]]) -> str:
     interval_strings = []
     for interval in intervals:
         if interval[0] == interval[1]:
@@ -598,17 +655,17 @@ def renderIntervals(intervals):
 
 class Heap():
 
-    def __init__(self):
-        self.cells = []
+    def __init__(self) -> None:
+        self.cells: list[tuple[str, str]] = []
 
-    def add(self, thread, expression):
+    def add(self, thread: lldb.SBThread, expression: str) -> None:
         frame = thread.GetSelectedFrame()
         value = frame.EvaluateExpression(expression)
         type_name = value.GetType().GetName()
         formatted = str(value.GetValueAsUnsigned())
         self.cells.append((type_name, formatted))
 
-    def remove(self, thread, expression):
+    def remove(self, thread: lldb.SBThread, expression: str) -> None:
         frame = thread.GetSelectedFrame()
         value = frame.EvaluateExpression(expression)
         addr = str(value.GetValueAsUnsigned())
@@ -617,29 +674,29 @@ class Heap():
 
 class Animator:
 
-    def __init__(self, program, infile, breakpoints, rends, sourceFile=None, heapExprs=[], heap=None):
-        self.program = program
-        self.infile = infile
-        self.breakpoints = breakpoints
-        self.renderers = rends
-        self.snapshot_counter = 0
-        self.numberedElements = []
-        self.heapExpressions = heapExprs
-        self.heap = heap
-        self.sourceFile = sourceFile
+    def __init__(self, program: str, infile: str | None, breakpoints: list[str], rends: list[Renderer], sourceFile: str | None = None, heapExprs: list[tuple[str, str, str]] | None = None, heap: Heap | None = None) -> None:
+        self.program: str = program
+        self.infile: str | None = infile
+        self.breakpoints: list[str] = breakpoints
+        self.renderers: list[Renderer] = rends
+        self.snapshot_counter: int = 0
+        self.numberedElements: list[NumberedElement] = []
+        self.heapExpressions: list[tuple[str, str, str]] = heapExprs if heapExprs is not None else []
+        self.heap: Heap | None = heap
+        self.sourceFile: str | None = sourceFile
 
-    def snapshotNumberedElements(self, thread):
+    def snapshotNumberedElements(self, thread: lldb.SBThread) -> list[NumberedElement]:
         self.snapshot_counter += 1
-        elements = []
+        elements: list[Element] = []
         for r in self.renderers:
             elements.extend(r.elements(thread))
         return [NumberedElement(number=self.snapshot_counter,
                                 element=e) for e in elements]
 
-    def takeSnapshot(self, thread):
+    def takeSnapshot(self, thread: lldb.SBThread) -> None:
         self.numberedElements.extend(self.snapshotNumberedElements(thread))
 
-    def movie(self, outfile):
+    def movie(self, outfile: str) -> None:
         """Creates a TikZ animation of the program run using LLDB."""
         try:
             os.remove("stdout.txt")
