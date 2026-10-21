@@ -5,3 +5,11 @@
 *.out
 quoziente-resto-due-var
 lldb-version/__pycache__/animator.cpython-312.pyc
+*.egg-info/
+__pycache__/
+*.nav
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
+examples/*/*.pdf

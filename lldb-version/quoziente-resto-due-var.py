@@ -1,18 +1,9 @@
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import animator
+from lldb_animator import Layout, Show, animate
 
-an = animator.Animator("quoziente-resto-due-var",
-                       "quoziente-resto-due-var.in",
-                       ["5",
-                        "6",
-                        "7",
-                        "8"],
-                       [animator.IORenderer(0.5, 0.5, 0.5, -4.5, True, False, 30, "stdin"),
-                        animator.IORenderer(
-                            0.5, 0.5, 0.5, -6, False, True, 30, "stdout"),
-                        animator.SourceRenderer(),
-                        animator.MemoryRenderer(14.0, 0.0, 1.0, sourceFile="quoziente-resto-due-var.c")],
-                       sourceFile="quoziente-resto-due-var.c")
-an.movie("quoziente-resto-due-var-tikz.tex")
+animate("quoziente-resto-due-var.c",
+        breakpoints=[5, 6, 7, 8],
+        show=Show.CODE | Show.STACK | Show.STDIN | Show.STDOUT,
+        stdin_file="quoziente-resto-due-var.in",
+        output="quoziente-resto-due-var-tikz.tex",
+        cflags=["-g", "-m32", "-O0", "-std=gnu89", "-Wno-implicit-int"],
+        layout=Layout(io_y=-4.5))

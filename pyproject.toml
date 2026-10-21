@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lldb-animator"
+version = "0.1.0"
+description = "Animazioni TikZ/Beamer dell'esecuzione di programmi C, basate su LLDB"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+lldb-animator = "lldb_animator.cli:main"
+
+[tool.setuptools]
+packages = ["lldb_animator"]
